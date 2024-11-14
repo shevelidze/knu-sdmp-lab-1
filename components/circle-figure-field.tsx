@@ -1,17 +1,18 @@
 import { PointCoordinatesField } from "./point-coordinates-field";
 import { Circle } from "@/classes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Point } from "@/types";
 import { View } from "react-native";
 import { AppTextInput } from "./app-text-input";
+import { useFormState } from "@/hooks";
 
 interface Props {
   onChange: (value: Circle | null) => void;
 }
 
 const CircleFigureField: React.FC<Props> = ({ onChange }) => {
-  const [center, setCenter] = useState<Point | null>(null);
-  const [radiusString, setRadiusString] = useState("");
+  const [center, setCenter] = useFormState<Point | null>(null, "center");
+  const [radiusString, setRadiusString] = useFormState("", "radius");
 
   const runChangeHandlerIfNecessary = (
     nextCenter: Point | null,
@@ -28,15 +29,15 @@ const CircleFigureField: React.FC<Props> = ({ onChange }) => {
 
   const handleRadiusInputChange = (text: string) => {
     setRadiusString(text);
-
-    runChangeHandlerIfNecessary(center, text);
   };
 
   const handleCenterChange = (value: Point | null) => {
     setCenter(value);
-
-    runChangeHandlerIfNecessary(value, radiusString);
   };
+
+  useEffect(() => {
+    runChangeHandlerIfNecessary(center, radiusString);
+  }, [center, radiusString]);
 
   return (
     <View>

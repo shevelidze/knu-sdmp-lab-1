@@ -1,59 +1,42 @@
 import { PointCoordinatesField } from "./point-coordinates-field";
 import { Triangle } from "@/classes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Point } from "@/types";
 import { View } from "react-native";
+import { useFormState } from "@/hooks";
 
 interface Props {
   onChange: (value: Triangle | null) => void;
 }
 
 const TriangleFigureField: React.FC<Props> = ({ onChange }) => {
-  const [pointA, setPointA] = useState<Point | null>(null);
-  const [pointB, setPointB] = useState<Point | null>(null);
-  const [pointC, setPointC] = useState<Point | null>(null);
+  const [pointA, setPointA] = useFormState<Point | null>(null, "pointA");
+  const [pointB, setPointB] = useFormState<Point | null>(null, "pointB");
+  const [pointC, setPointC] = useFormState<Point | null>(null, "pointC");
 
-  const createPointChangeHandler = (
-    stateSetter: React.Dispatch<React.SetStateAction<Point | null>>
-  ) => {
-    return (value: Point | null) => {
-      stateSetter(value);
-
-      let nextPointA = pointA;
-      let nextPointB = pointB;
-      let nextPointC = pointC;
-
-      if (stateSetter === setPointA) {
-        nextPointA = value;
-      } else if (stateSetter === setPointB) {
-        nextPointB = value;
-      } else {
-        nextPointC = value;
-      }
-
-      if (nextPointA && nextPointB && nextPointC) {
-        onChange(new Triangle(nextPointA, nextPointB, nextPointC));
-      } else {
-        onChange(null);
-      }
-    };
-  };
+  useEffect(() => {
+    if (pointA && pointB && pointC) {
+      onChange(new Triangle(pointA, pointB, pointC));
+    } else {
+      onChange(null);
+    }
+  }, [pointA, pointB, pointC]);
 
   return (
     <View>
       <PointCoordinatesField
         value={pointA}
-        onChange={createPointChangeHandler(setPointA)}
+        onChange={setPointA}
         label="Point 1"
       />
       <PointCoordinatesField
         value={pointB}
-        onChange={createPointChangeHandler(setPointB)}
+        onChange={setPointB}
         label="Point 2"
       />
       <PointCoordinatesField
         value={pointC}
-        onChange={createPointChangeHandler(setPointC)}
+        onChange={setPointC}
         label="Point 3"
       />
     </View>

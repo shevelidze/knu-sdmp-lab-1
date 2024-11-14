@@ -19,6 +19,7 @@ import {
 import RNPickerSelect, { Item } from "react-native-picker-select";
 import * as FileSystem from "expo-file-system";
 import Svg, { Path, Rect } from "react-native-svg";
+import { FormStateContext } from "@/contexts";
 
 const FIGURE_NAME_TO_LABEL: Record<FigureName, string> = {
   [FigureName.TRIANGLE]: "Triangle",
@@ -36,9 +37,11 @@ const FIGURES_SELECT_ITEMS = Object.values(FigureName).map(
 );
 
 export default function Index() {
-  const [figureName, setFigureName] = useState<FigureName | null>(null);
   const [figure, setFigure] = useState<Figure | null>(null);
   const [doesFileExist, setDoesFileExist] = useState<boolean>(false);
+  const [formValues, setFormValues] = useState<any>({});
+
+  const figureName = formValues["figureName"] as FigureName;
 
   const figureArea = useMemo(() => {
     if (figure) {
@@ -84,14 +87,7 @@ export default function Index() {
       return;
     }
 
-    await FileSystem.writeAsStringAsync(
-      fileUri,
-      JSON.stringify({
-        type: figure.name,
-        perimeter: figure.perimeter,
-        area: figure.area,
-      })
-    );
+    await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(formValues));
 
     setDoesFileExist(true);
 
@@ -102,7 +98,8 @@ export default function Index() {
     try {
       const fileContent = await FileSystem.readAsStringAsync(fileUri);
 
-      Alert.alert("Saved data", fileContent);
+      setFormValues(JSON.parse(fileContent));
+      ToastAndroid.show("Restored data from file", ToastAndroid.SHORT);
     } catch (error) {
       console.error(error);
     }
@@ -121,41 +118,55 @@ export default function Index() {
   };
 
   return (
-    <ScrollView>
-      <View style={styles.container}>
-        <Text>Area: {figureArea}</Text>
-        <Text>Perimeter: {figurePerimeter}</Text>
-        <RNPickerSelect
-          placeholder={{
-            label: "Select a figure",
-            value: null,
-            key: "placeholder",
-          }}
-          onValueChange={(value) => setFigureName(value)}
-          items={FIGURES_SELECT_ITEMS}
-          style={{
-            inputAndroid: styles.input,
-          }}
-          useNativeAndroidPickerStyle={false}
-        />
-        <FigureField onChange={setFigure} />
-        <Button title="Save to file" onPress={saveData} disabled={!figure} />
-        <Button
-          title="Read from file"
-          onPress={readFile}
-          disabled={!doesFileExist}
-        />
-        <Button
-          title="Remove file"
-          onPress={removeFile}
-          disabled={!doesFileExist}
-        />
-        <Svg width="300px" height="300px" viewBox="0 0 10 10">
-          {/* <Rect x='0' y='0' width='100' height='100' fill='red' /> */}
-          {figure && figure.render()}
-        </Svg>
-      </View>
-    </ScrollView>
+    <FormStateContext.Provider
+      value={{
+        value: formValues,
+        setValue: setFormValues,
+      }}
+    >
+      <ScrollView>
+        <View style={styles.container}>
+          <Text>Area: {figureArea}</Text>
+          <Text>Perimeter: {figurePerimeter}</Text>
+          <RNPickerSelect
+            placeholder={{
+              label: "Select a figure",
+              value: null,
+              key: "placeholder",
+            }}
+            onValueChange={(value) => {
+              if (figureName !== value) {
+                setFormValues({
+                  figureName: value,
+                });
+              }
+            }}
+            items={FIGURES_SELECT_ITEMS}
+            style={{
+              inputAndroid: styles.input,
+            }}
+            useNativeAndroidPickerStyle={false}
+            value={figureName}
+          />
+          <FigureField onChange={setFigure} />
+          <Button title="Save to file" onPress={saveData} disabled={!figure} />
+          <Button
+            title="Read from file"
+            onPress={readFile}
+            disabled={!doesFileExist}
+          />
+          <Button
+            title="Remove file"
+            onPress={removeFile}
+            disabled={!doesFileExist}
+          />
+          <Svg width="300px" height="300px" viewBox="0 0 10 10">
+            {/* <Rect x='0' y='0' width='100' height='100' fill='red' /> */}
+            {figure && figure.render()}
+          </Svg>
+        </View>
+      </ScrollView>
+    </FormStateContext.Provider>
   );
 }
 
